@@ -1,0 +1,1 @@
+ALTER TABLE usuarios ADD COLUMN baneado TINYINT(1) DEFAULT 0;
