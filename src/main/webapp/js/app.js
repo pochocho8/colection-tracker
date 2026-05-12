@@ -327,7 +327,7 @@ function renderCollections(colecciones) {
     
     collectionsGrid.innerHTML = colecciones.map(col => {
         const porcentaje = col.totalItems > 0 ? Math.round((col.conseguidos / col.totalItems) * 100) : 0;
-        const publicBadge = col.publica ? '<span class="public-badge" style="margin-left: 0.5rem;">Pública</span>' : '';
+        const publicBadge = '';
         
         return '<div class="collection-card" data-id="' + col.ideCol + '">' +
             '<div style="display: flex; justify-content: space-between; align-items: start;">' +
@@ -367,7 +367,7 @@ function renderPublicCollections(colecciones) {
             '<div class="collection-card-icon" onclick="openPublicCollection(' + col.ideCol + ')">' +
                 (iconSVGs[col.icono] || iconSVGs.star) +
                 '<span>' + col.nomCol + '</span>' +
-                '<span class="public-badge" style="margin-left: 0.5rem;">Por ' + (col.ownerName || 'Anónimo') + '</span>' +
+                '' +
             '</div>' +
             '<div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.75rem;">' +
                 col.totalItems + ' item' + (col.totalItems !== 1 ? 's' : '') +
@@ -497,14 +497,13 @@ function loadCollectionDetail(id) {
             switchPublic.checked = col.publica || false;
             btnDeleteCollection.style.display = 'flex';
             btnDownloadCollection.style.display = 'none';
-            publicBadge.style.display = col.publica ? 'inline-block' : 'none';
+            publicBadge.style.display = 'none';
             addItemSection.style.display = 'block';
         } else {
             switchContainer.style.display = 'none';
             btnDeleteCollection.style.display = 'none';
             btnDownloadCollection.style.display = 'flex';
-            publicBadge.style.display = 'inline-block';
-            publicBadge.textContent = 'Pública - Por ' + (col.ownerName || 'Anónimo');
+            publicBadge.style.display = 'none';
             addItemSection.style.display = 'none';
         }
         
