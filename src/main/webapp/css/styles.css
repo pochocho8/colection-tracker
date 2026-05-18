@@ -317,6 +317,12 @@ input, select {
     display: block;
 }
 
+.error-msg.success-msg {
+    background: #f0fdf4;
+    color: var(--color-success);
+    border: 0.0625rem solid var(--color-success);
+}
+
 .app-screen {
     min-height: 100vh;
     display: flex;

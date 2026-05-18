@@ -18,7 +18,7 @@ public class ColeccionGetDAO {
                 "SUM(CASE WHEN i.estado = 'deseado' THEN 1 ELSE 0 END) as deseados " +
                 "FROM colecciones c " +
                 "LEFT JOIN items i ON c.ide_col = i.ide_col " +
-                "WHERE c.ide_col = ? AND (c.ide_usu = ? OR c.publica = 1) " +
+                "WHERE c.ide_col = ? AND c.ide_usu = ? " +
                 "GROUP BY c.ide_col, c.nom_col, c.icono, c.publica, c.ide_usu"
             );
             stmt.setInt(1, ideCol);

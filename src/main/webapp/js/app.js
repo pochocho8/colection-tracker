@@ -82,8 +82,13 @@ function showError(element, message) {
     element.classList.add('visible');
 }
 
+function showSuccess(element, message) {
+    element.textContent = message;
+    element.classList.add('visible', 'success-msg');
+}
+
 function hideError(element) {
-    element.classList.remove('visible');
+    element.classList.remove('visible', 'success-msg');
 }
 
 function showScreen(screen) {
@@ -186,7 +191,8 @@ registerForm.addEventListener('submit', function(e) {
         registerForm.reset();
         document.getElementById('loginUsername').value = username;
         showScreen('auth');
-        showError(loginError, 'Cuenta creada correctamente. Inicia sesión.');
+        loginError.classList.remove('success-msg');
+        showSuccess(loginError, 'Cuenta creada correctamente. Inicia sesión.');
     })
     .catch(function(error) {
         showError(registerError, error.message);
@@ -328,6 +334,10 @@ function backToDashboard() {
 }
 
 async function openPublicCollection(id) {
+    if (!currentUser) {
+        showScreen('auth');
+        return;
+    }
     currentCollectionId = id;
     inPublicBrowsingMode = isPublicView;
     dashboardSection.style.display = 'none';

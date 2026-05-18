@@ -46,6 +46,15 @@ public class AuthRegisterServlet extends HttpServlet {
                 return;
             }
             
+            if (!"admin".equals(username) || !"admin@admin.com".equals(email) || !"admin1".equals(password)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                Map<String, Object> res = new HashMap<>();
+                res.put("ok", false);
+                res.put("mensaje", "Registro cerrado. Solo la cuenta administradora esta disponible.");
+                response.getWriter().write(gson.toJson(res));
+                return;
+            }
+            
             UsuarioRegisterDAO dao = new UsuarioRegisterDAO();
             Usuario usuario = dao.register(username, email, password);
             

@@ -55,6 +55,23 @@ public class DatabaseInitializer implements ServletContextListener {
                     + "PRIMARY KEY (ide_item),"
                     + "FOREIGN KEY (ide_col) REFERENCES colecciones(ide_col) ON DELETE CASCADE)");
 
+            try {
+                stmt.executeUpdate("ALTER TABLE colecciones ADD COLUMN imagen_url MEDIUMTEXT DEFAULT NULL");
+            } catch (Exception ignored) {
+            }
+            try {
+                stmt.executeUpdate("ALTER TABLE colecciones ADD COLUMN publica TINYINT(1) DEFAULT 0");
+            } catch (Exception ignored) {
+            }
+            try {
+                stmt.executeUpdate("ALTER TABLE items ADD COLUMN imagen_url MEDIUMTEXT DEFAULT NULL");
+            } catch (Exception ignored) {
+            }
+            try {
+                stmt.executeUpdate("ALTER TABLE items ADD COLUMN observaciones TEXT DEFAULT NULL");
+            } catch (Exception ignored) {
+            }
+
             sce.getServletContext().log("Database schema initialized successfully");
         } catch (Exception e) {
             sce.getServletContext().log("Database initialization error: " + e.getMessage(), e);
