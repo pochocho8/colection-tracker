@@ -366,6 +366,19 @@ function downloadCollection(id, btnElement) {
         });
     })
     .then(function(data) {
+        var allButtons = document.querySelectorAll('.btn-download');
+        allButtons.forEach(function(btn) {
+            var card = btn.closest('.collection-card');
+            var btnColId = card ? parseInt(card.dataset.id) : null;
+            if (btnColId === id) {
+                btn.classList.add('downloaded');
+                btn.textContent = 'Agregada';
+            }
+        });
+        if (id === currentCollectionId) {
+            btnDownloadCollection.classList.add('downloaded');
+            btnDownloadCollection.textContent = 'Agregada';
+        }
         if (btnElement) {
             btnElement.classList.add('downloaded');
             btnElement.textContent = 'Agregada';
@@ -579,6 +592,14 @@ function loadCollectionDetail(id) {
             btnDeleteCollection.style.display = 'none';
             btnDownloadCollection.style.display = 'flex';
             addItemSection.style.display = 'none';
+            var found = allPublicCollections.find(function(c) { return c.ideCol === id; });
+            if (found && found.descargada) {
+                btnDownloadCollection.classList.add('downloaded');
+                btnDownloadCollection.textContent = 'Agregada';
+            } else {
+                btnDownloadCollection.classList.remove('downloaded');
+                btnDownloadCollection.textContent = 'Agregar Coleccion';
+            }
         }
         
     })
