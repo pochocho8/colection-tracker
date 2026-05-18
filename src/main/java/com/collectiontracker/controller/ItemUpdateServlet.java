@@ -52,25 +52,39 @@ public class ItemUpdateServlet extends HttpServlet {
             
             Map<String, Object> data = gson.fromJson(sb.toString(), Map.class);
             
-            String estado = data.get("estado") != null ? data.get("estado").toString() : null;
-            if (estado == null) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                Map<String, Object> res = new HashMap<>();
-                res.put("ok", false);
-                res.put("mensaje", "Falta el campo estado");
-                response.getWriter().write(gson.toJson(res));
-                return;
-            }
-            
             int ideItem = Integer.parseInt(idParam);
             int userId = (int) session.getAttribute("userId");
             
             ItemUpdateDAO dao = new ItemUpdateDAO();
-            boolean result = dao.updateItem(ideItem, estado, userId);
+            boolean result = false;
+            
+            Object estadoObj = data.get("estado");
+            Object imagenUrlObj = data.get("imagenUrl");
+            Object observacionesObj = data.get("observaciones");
+            
+            if (estadoObj != null) {
+                String estado = estadoObj.toString();
+                result = dao.updateItem(ideItem, estado, userId);
+            } else if (imagenUrlObj != null) {
+                String imagenUrl = imagenUrlObj.toString();
+                if (imagenUrl.trim().isEmpty()) imagenUrl = null;
+                result = dao.updateItemImage(ideItem, imagenUrl, userId);
+            } else if (observacionesObj != null) {
+                String observaciones = observacionesObj.toString();
+                if (observaciones.trim().isEmpty()) observaciones = null;
+                result = dao.updateItemObservaciones(ideItem, observaciones, userId);
+            } else {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                Map<String, Object> res = new HashMap<>();
+                res.put("ok", false);
+                res.put("mensaje", "Falta campo estado, imagenUrl u observaciones");
+                response.getWriter().write(gson.toJson(res));
+                return;
+            }
             
             Map<String, Object> res = new HashMap<>();
             res.put("ok", result);
-            res.put("mensaje", result ? "Item actualizado" : "Error al actualizar");
+            res.put("mensaje", result ? "Elemento actualizado" : "Error al actualizar");
             response.getWriter().write(gson.toJson(res));
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

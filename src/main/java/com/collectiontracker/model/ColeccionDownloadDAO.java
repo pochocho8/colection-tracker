@@ -54,7 +54,7 @@ public class ColeccionDownloadDAO {
             
             try {
                 PreparedStatement stmtOrig = conn.prepareStatement(
-                    "SELECT nom_col, icono FROM colecciones WHERE ide_col = ? AND publica = 1"
+                    "SELECT nom_col, icono, imagen_url FROM colecciones WHERE ide_col = ? AND publica = 1"
                 );
                 stmtOrig.setInt(1, ideColOriginal);
                 ResultSet rsOrig = stmtOrig.executeQuery();
@@ -65,14 +65,20 @@ public class ColeccionDownloadDAO {
                 
                 String nomCol = rsOrig.getString("nom_col");
                 String icono = rsOrig.getString("icono");
+                String imagenUrl = rsOrig.getString("imagen_url");
                 
                 PreparedStatement stmtInsert = conn.prepareStatement(
-                    "INSERT INTO colecciones (ide_usu, nom_col, icono, publica) VALUES (?, ?, ?, 0)",
+                    "INSERT INTO colecciones (ide_usu, nom_col, icono, publica, imagen_url) VALUES (?, ?, ?, 0, ?)",
                     PreparedStatement.RETURN_GENERATED_KEYS
                 );
                 stmtInsert.setInt(1, ideUsu);
-                stmtInsert.setString(2, nomCol + " (Copia)");
+                stmtInsert.setString(2, nomCol);
                 stmtInsert.setString(3, icono);
+                if (imagenUrl != null) {
+                    stmtInsert.setString(4, imagenUrl);
+                } else {
+                    stmtInsert.setNull(4, java.sql.Types.VARCHAR);
+                }
                 stmtInsert.executeUpdate();
                 
                 ResultSet rsKeys = stmtInsert.getGeneratedKeys();
@@ -82,18 +88,31 @@ public class ColeccionDownloadDAO {
                 }
                 
                 PreparedStatement stmtItems = conn.prepareStatement(
-                    "SELECT nom_item FROM items WHERE ide_col = ?"
+                    "SELECT nom_item, estado, imagen_url, observaciones FROM items WHERE ide_col = ?"
                 );
                 stmtItems.setInt(1, ideColOriginal);
                 ResultSet rsItems = stmtItems.executeQuery();
                 
                 PreparedStatement stmtInsertItem = conn.prepareStatement(
-                    "INSERT INTO items (ide_col, nom_item, estado) VALUES (?, ?, 'ninguno')"
+                    "INSERT INTO items (ide_col, nom_item, estado, imagen_url, observaciones) VALUES (?, ?, ?, ?, ?)"
                 );
                 
                 while (rsItems.next()) {
                     stmtInsertItem.setInt(1, ideColCopia);
                     stmtInsertItem.setString(2, rsItems.getString("nom_item"));
+                    stmtInsertItem.setString(3, rsItems.getString("estado"));
+                    String imgUrl = rsItems.getString("imagen_url");
+                    if (imgUrl != null) {
+                        stmtInsertItem.setString(4, imgUrl);
+                    } else {
+                        stmtInsertItem.setNull(4, java.sql.Types.VARCHAR);
+                    }
+                    String obs = rsItems.getString("observaciones");
+                    if (obs != null) {
+                        stmtInsertItem.setString(5, obs);
+                    } else {
+                        stmtInsertItem.setNull(5, java.sql.Types.VARCHAR);
+                    }
                     stmtInsertItem.executeUpdate();
                 }
                 
@@ -109,7 +128,7 @@ public class ColeccionDownloadDAO {
                 
                 colCopia = new Coleccion();
                 colCopia.setIdeCol(ideColCopia);
-                colCopia.setNomCol(nomCol + " (Copia)");
+                colCopia.setNomCol(nomCol);
                 colCopia.setIcono(icono);
                 colCopia.setPublica(false);
                 colCopia.setTotalItems(0);

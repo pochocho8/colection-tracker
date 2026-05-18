@@ -26,13 +26,9 @@ public class ItemListServlet extends HttpServlet {
         
         try {
             HttpSession session = request.getSession(false);
-            if (session == null || session.getAttribute("userId") == null) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                Map<String, Object> res = new HashMap<>();
-                res.put("ok", false);
-                res.put("mensaje", "No autenticado");
-                response.getWriter().write(gson.toJson(res));
-                return;
+            int ideUsu = -1;
+            if (session != null && session.getAttribute("userId") != null) {
+                ideUsu = (int) session.getAttribute("userId");
             }
             
             String coleccionParam = request.getParameter("coleccion");
@@ -46,10 +42,9 @@ public class ItemListServlet extends HttpServlet {
             }
             
             int ideCol = Integer.parseInt(coleccionParam);
-            int ideUsu = (int) session.getAttribute("userId");
             
             ColeccionGetDAO colDao = new ColeccionGetDAO();
-            boolean isOwner = colDao.isOwner(ideCol, ideUsu);
+            boolean isOwner = ideUsu != -1 && colDao.isOwner(ideCol, ideUsu);
             
             ItemListDAO dao = new ItemListDAO();
             List<Item> items;

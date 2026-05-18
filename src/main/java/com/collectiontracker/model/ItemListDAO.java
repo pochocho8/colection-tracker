@@ -14,7 +14,7 @@ public class ItemListDAO {
         try {
             Connection conn = ConexionBD.getConnection();
             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT i.ide_item, i.ide_col, i.nom_item, i.estado " +
+                "SELECT i.ide_item, i.ide_col, i.nom_item, i.estado, i.imagen_url, i.observaciones " +
                 "FROM items i " +
                 "INNER JOIN colecciones c ON i.ide_col = c.ide_col " +
                 "WHERE i.ide_col = ? AND c.ide_usu = ? " +
@@ -30,6 +30,8 @@ public class ItemListDAO {
                 item.setIdeCol(rs.getInt("ide_col"));
                 item.setNomItem(rs.getString("nom_item"));
                 item.setEstado(rs.getString("estado"));
+                item.setImagenUrl(rs.getString("imagen_url"));
+                item.setObservaciones(rs.getString("observaciones"));
                 list.add(item);
             }
             conn.close();
@@ -44,13 +46,12 @@ public class ItemListDAO {
         try {
             Connection conn = ConexionBD.getConnection();
             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT i.ide_item, i.ide_col, i.nom_item, i.estado " +
+                "SELECT i.ide_item, i.ide_col, i.nom_item, i.estado, i.imagen_url, i.observaciones " +
                 "FROM items i " +
                 "INNER JOIN colecciones c ON i.ide_col = c.ide_col " +
                 "WHERE i.ide_col = ? AND c.publica = 1 " +
                 "ORDER BY i.ide_item ASC"
             );
-            stmt.setInt(1, ideCol);
             ResultSet rs = stmt.executeQuery();
             
             while (rs.next()) {
@@ -59,6 +60,8 @@ public class ItemListDAO {
                 item.setIdeCol(rs.getInt("ide_col"));
                 item.setNomItem(rs.getString("nom_item"));
                 item.setEstado(rs.getString("estado"));
+                item.setImagenUrl(rs.getString("imagen_url"));
+                item.setObservaciones(rs.getString("observaciones"));
                 list.add(item);
             }
             conn.close();

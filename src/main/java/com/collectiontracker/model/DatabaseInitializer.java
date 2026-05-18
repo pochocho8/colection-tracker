@@ -28,6 +28,7 @@ public class DatabaseInitializer implements ServletContextListener {
                     + "nom_col VARCHAR(150) NOT NULL,"
                     + "icono VARCHAR(50) DEFAULT 'collection',"
                     + "publica TINYINT(1) DEFAULT 0,"
+                    + "imagen_url MEDIUMTEXT DEFAULT NULL,"
                     + "PRIMARY KEY (ide_col),"
                     + "FOREIGN KEY (ide_usu) REFERENCES usuarios(ide_usu) ON DELETE CASCADE)");
 
@@ -48,6 +49,8 @@ public class DatabaseInitializer implements ServletContextListener {
                     + "ide_col INT NOT NULL,"
                     + "nom_item VARCHAR(150) NOT NULL,"
                     + "estado ENUM('ninguno', 'conseguido', 'deseado') DEFAULT 'ninguno',"
+                    + "imagen_url MEDIUMTEXT DEFAULT NULL,"
+                    + "observaciones TEXT DEFAULT NULL,"
                     + "fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
                     + "PRIMARY KEY (ide_item),"
                     + "FOREIGN KEY (ide_col) REFERENCES colecciones(ide_col) ON DELETE CASCADE)");

@@ -14,7 +14,7 @@ public class ColeccionListDAO {
         try {
             Connection conn = ConexionBD.getConnection();
             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT c.ide_col, c.nom_col, c.icono, c.publica, " +
+                "SELECT c.ide_col, c.nom_col, c.icono, c.publica, MAX(c.imagen_url) as imagen_url, " +
                 "COUNT(i.ide_item) as total_items, " +
                 "SUM(CASE WHEN i.estado = 'conseguido' THEN 1 ELSE 0 END) as conseguidos, " +
                 "SUM(CASE WHEN i.estado = 'deseado' THEN 1 ELSE 0 END) as deseados " +
@@ -33,6 +33,7 @@ public class ColeccionListDAO {
                 col.setNomCol(rs.getString("nom_col"));
                 col.setIcono(rs.getString("icono"));
                 col.setPublica(rs.getBoolean("publica"));
+                col.setImagenUrl(rs.getString("imagen_url"));
                 col.setTotalItems(rs.getInt("total_items"));
                 col.setConseguidos(rs.getInt("conseguidos"));
                 col.setDeseados(rs.getInt("deseados"));
@@ -50,7 +51,7 @@ public class ColeccionListDAO {
         try {
             Connection conn = ConexionBD.getConnection();
             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT c.ide_col, c.nom_col, c.icono, c.publica, u.nom_usu as owner_name, " +
+                "SELECT c.ide_col, c.nom_col, c.icono, c.publica, MAX(c.imagen_url) as imagen_url, u.nom_usu as owner_name, " +
                 "COUNT(i.ide_item) as total_items, " +
                 "SUM(CASE WHEN i.estado = 'conseguido' THEN 1 ELSE 0 END) as conseguidos, " +
                 "SUM(CASE WHEN i.estado = 'deseado' THEN 1 ELSE 0 END) as deseados " +
@@ -69,6 +70,7 @@ public class ColeccionListDAO {
                 col.setNomCol(rs.getString("nom_col"));
                 col.setIcono(rs.getString("icono"));
                 col.setPublica(rs.getBoolean("publica"));
+                col.setImagenUrl(rs.getString("imagen_url"));
                 col.setOwnerName(rs.getString("owner_name"));
                 col.setTotalItems(rs.getInt("total_items"));
                 col.setConseguidos(rs.getInt("conseguidos"));

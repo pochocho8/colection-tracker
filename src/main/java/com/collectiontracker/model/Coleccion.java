@@ -10,6 +10,7 @@ public class Coleccion {
     private int deseados;
     private String ownerName;
     private int ideUsu;
+    private String imagenUrl;
 
     public Coleccion() {
     }
@@ -90,5 +91,13 @@ public class Coleccion {
     
     public void setIdeUsu(int ideUsu) {
         this.ideUsu = ideUsu;
+    }
+
+    public String getImagenUrl() {
+        return imagenUrl;
+    }
+
+    public void setImagenUrl(String imagenUrl) {
+        this.imagenUrl = imagenUrl;
     }
 }

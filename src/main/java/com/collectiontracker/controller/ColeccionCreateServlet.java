@@ -45,6 +45,7 @@ public class ColeccionCreateServlet extends HttpServlet {
             
             String nombre = data.get("nombre") != null ? data.get("nombre").toString() : null;
             String icono = data.get("icono") != null ? data.get("icono").toString() : null;
+            String imagenUrl = data.get("imagenUrl") != null ? data.get("imagenUrl").toString() : null;
             Object publicaObj = data.get("publica");
             boolean publica = publicaObj != null && (publicaObj.equals(true) || publicaObj.equals(1.0) || publicaObj.toString().equals("true"));
             
@@ -61,7 +62,7 @@ public class ColeccionCreateServlet extends HttpServlet {
             if (icono == null) icono = "star";
             
             ColeccionCreateDAO dao = new ColeccionCreateDAO();
-            Coleccion col = dao.createCollection(ideUsu, nombre, icono, publica);
+            Coleccion col = dao.createCollection(ideUsu, nombre, icono, publica, imagenUrl);
             
             if (col != null) {
                 response.setStatus(HttpServletResponse.SC_CREATED);

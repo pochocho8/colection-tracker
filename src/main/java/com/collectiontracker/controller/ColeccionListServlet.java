@@ -42,6 +42,8 @@ public class ColeccionListServlet extends HttpServlet {
             res.put("ok", true);
             res.put("colecciones", collections);
             res.put("total", collections.size());
+            res.put("nomUsu", session.getAttribute("username"));
+            res.put("esAdmin", session.getAttribute("isAdmin") != null && (boolean) session.getAttribute("isAdmin"));
             response.getWriter().write(gson.toJson(res));
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

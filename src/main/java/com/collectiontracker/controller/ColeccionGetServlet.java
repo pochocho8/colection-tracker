@@ -24,13 +24,9 @@ public class ColeccionGetServlet extends HttpServlet {
         
         try {
             HttpSession session = request.getSession(false);
-            if (session == null || session.getAttribute("userId") == null) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                Map<String, Object> res = new HashMap<>();
-                res.put("ok", false);
-                res.put("mensaje", "No autenticado");
-                response.getWriter().write(gson.toJson(res));
-                return;
+            int ideUsu = -1;
+            if (session != null && session.getAttribute("userId") != null) {
+                ideUsu = (int) session.getAttribute("userId");
             }
             
             String idParam = request.getParameter("id");
@@ -44,11 +40,10 @@ public class ColeccionGetServlet extends HttpServlet {
             }
             
             int ideCol = Integer.parseInt(idParam);
-            int ideUsu = (int) session.getAttribute("userId");
             
             ColeccionGetDAO dao = new ColeccionGetDAO();
             Coleccion col = dao.getCollection(ideCol, ideUsu);
-            boolean isOwner = dao.isOwner(ideCol, ideUsu);
+            boolean isOwner = ideUsu != -1 && dao.isOwner(ideCol, ideUsu);
             
             if (col != null) {
                 Map<String, Object> res = new HashMap<>();

@@ -48,6 +48,8 @@ public class ItemCreateServlet extends HttpServlet {
             Object coleccionObj = data.get("coleccion");
             Object nombreObj = data.get("nombre");
             Object estadoObj = data.get("estado");
+            Object imagenUrlObj = data.get("imagenUrl");
+            Object observacionesObj = data.get("observaciones");
             
             if (coleccionObj == null || nombreObj == null || nombreObj.toString().isEmpty()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -75,9 +77,13 @@ public class ItemCreateServlet extends HttpServlet {
             
             String nombre = nombreObj != null ? nombreObj.toString() : "";
             String estado = estadoObj != null ? estadoObj.toString() : "ninguno";
+            String imagenUrl = imagenUrlObj != null ? imagenUrlObj.toString() : null;
+            String observaciones = observacionesObj != null ? observacionesObj.toString() : null;
+            if (imagenUrl != null && imagenUrl.trim().isEmpty()) imagenUrl = null;
+            if (observaciones != null && observaciones.trim().isEmpty()) observaciones = null;
             
             ItemCreateDAO dao = new ItemCreateDAO();
-            Item item = dao.createItem(ideCol, nombre, estado);
+            Item item = dao.createItem(ideCol, nombre, estado, imagenUrl, observaciones);
             
             if (item != null) {
                 response.setStatus(HttpServletResponse.SC_CREATED);
@@ -89,7 +95,7 @@ public class ItemCreateServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 Map<String, Object> res = new HashMap<>();
                 res.put("ok", false);
-                res.put("mensaje", "Error al crear el item");
+                res.put("mensaje", "Error al crear el elemento");
                 response.getWriter().write(gson.toJson(res));
             }
         } catch (Exception e) {

@@ -54,24 +54,29 @@ public class ColeccionUpdateServlet extends HttpServlet {
             
             String nombre = data.get("nombre") != null ? data.get("nombre").toString() : null;
             String icono = data.get("icono") != null ? data.get("icono").toString() : null;
+            String imagenUrl = data.get("imagenUrl") != null ? data.get("imagenUrl").toString() : null;
             Object publicaObj = data.get("publica");
             boolean publica = publicaObj != null && (publicaObj.equals(true) || publicaObj.equals(1.0) || publicaObj.toString().equals("true"));
-            
-            if (nombre == null || nombre.isEmpty()) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                Map<String, Object> res = new HashMap<>();
-                res.put("ok", false);
-                res.put("mensaje", "El nombre es obligatorio");
-                response.getWriter().write(gson.toJson(res));
-                return;
-            }
             
             int ideCol = Integer.parseInt(idParam);
             int ideUsu = (int) session.getAttribute("userId");
             if (icono == null) icono = "star";
             
             ColeccionUpdateDAO dao = new ColeccionUpdateDAO();
-            boolean result = dao.updateCollection(ideCol, ideUsu, nombre, icono, publica);
+            boolean result;
+            if (imagenUrl != null) {
+                result = dao.updateCollectionImage(ideCol, ideUsu, imagenUrl);
+            } else {
+                if (nombre == null || nombre.isEmpty()) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    Map<String, Object> res = new HashMap<>();
+                    res.put("ok", false);
+                    res.put("mensaje", "El nombre es obligatorio");
+                    response.getWriter().write(gson.toJson(res));
+                    return;
+                }
+                result = dao.updateCollection(ideCol, ideUsu, nombre, icono, publica);
+            }
             
             Map<String, Object> res = new HashMap<>();
             res.put("ok", result);

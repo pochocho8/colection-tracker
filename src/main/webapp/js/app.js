@@ -1,9 +1,12 @@
 const authScreen = document.getElementById('authScreen');
+const registerScreen = document.getElementById('registerScreen');
 const appScreen = document.getElementById('appScreen');
 const loginForm = document.getElementById('loginForm');
-const registerForm = document.getElementById('registerForm');
 const loginError = document.getElementById('loginError');
+const registerForm = document.getElementById('registerForm');
 const registerError = document.getElementById('registerError');
+const btnGoToRegister = document.getElementById('btnGoToRegister');
+const btnGoToLogin = document.getElementById('btnGoToLogin');
 const btnLogout = document.getElementById('btnLogout');
 const userDisplay = document.getElementById('userDisplay');
 const collectionsGrid = document.getElementById('collectionsGrid');
@@ -17,17 +20,25 @@ const btnDeleteCollection = document.getElementById('btnDeleteCollection');
 const btnDownloadCollection = document.getElementById('btnDownloadCollection');
 const switchPublic = document.getElementById('switchPublic');
 const switchContainer = document.getElementById('switchContainer');
-const publicBadge = document.getElementById('publicBadge');
 const btnToggleView = document.getElementById('btnToggleView');
 const btnBackToMy = document.getElementById('btnBackToMy');
 const publicSection = document.getElementById('publicSection');
 const publicGrid = document.getElementById('publicGrid');
 const publicEmpty = document.getElementById('publicEmpty');
+const btnLogin = document.getElementById('btnLogin');
 const modalOverlay = document.getElementById('modalOverlay');
 const btnCancelModal = document.getElementById('btnCancelModal');
 const formNewCollection = document.getElementById('formNewCollection');
 const formAddItem = document.getElementById('formAddItem');
+const itemImagenFile = document.getElementById('itemImagenFile');
+const itemObservaciones = document.getElementById('itemObservaciones');
 const itemsList = document.getElementById('itemsList');
+const imageModal = document.getElementById('imageModal');
+const imageModalImg = document.getElementById('imageModalImg');
+const btnCloseImageModal = document.getElementById('btnCloseImageModal');
+const switchLabelPrivado = document.getElementById('switchLabelPrivado');
+const switchLabelPublico = document.getElementById('switchLabelPublico');
+
 const confirmModal = document.getElementById('confirmModal');
 const confirmTitle = document.getElementById('confirmTitle');
 const confirmMessage = document.getElementById('confirmMessage');
@@ -38,10 +49,11 @@ let currentUser = null;
 let currentCollectionId = null;
 let selectedIcon = 'star';
 let confirmCallback = null;
+let allPublicCollections = [];
 
-let isPublicView = false;
+let isPublicView = true;
 let currentIsOwner = false;
-let inPublicBrowsingMode = false;
+let inPublicBrowsingMode = true;
 let isAdmin = false;
 
 const adminSection = document.getElementById('adminSection');
@@ -59,6 +71,12 @@ const iconSVGs = {
     sparkle: '<svg role="img" aria-label="Brillo" viewBox="0 0 24 24" width="1.25rem" height="1.25rem" fill="currentColor"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2zm0 4.8L10.2 12 2 12l8.2 1.2L12 18l1.8-4.8L22 12l-8.2-1.2L12 6.8z"/></svg>'
 };
 
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 function showError(element, message) {
     element.textContent = message;
     element.classList.add('visible');
@@ -69,11 +87,14 @@ function hideError(element) {
 }
 
 function showScreen(screen) {
+    authScreen.style.display = 'none';
+    registerScreen.style.display = 'none';
+    appScreen.style.display = 'none';
     if (screen === 'auth') {
         authScreen.style.display = 'flex';
-        appScreen.style.display = 'none';
+    } else if (screen === 'register') {
+        registerScreen.style.display = 'flex';
     } else {
-        authScreen.style.display = 'none';
         appScreen.style.display = 'flex';
     }
 }
@@ -90,34 +111,12 @@ function hideConfirmModal() {
     confirmCallback = null;
 }
 
-document.querySelectorAll('.auth-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-        tab.classList.add('active');
-        const target = tab.dataset.tab;
-        if (target === 'login') {
-            loginForm.classList.add('active');
-        } else {
-            registerForm.classList.add('active');
-        }
-        hideError(loginError);
-        hideError(registerError);
-    });
-});
-
 loginForm.addEventListener('submit', function(e) {
     e.preventDefault();
     hideError(loginError);
-    
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    
-    if (!username || !password) {
-        showError(loginError, 'Completa todos los campos');
-        return;
-    }
-    
+    var username = document.getElementById('loginUsername').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    if (!username || !password) return;
     fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -133,11 +132,16 @@ loginForm.addEventListener('submit', function(e) {
         });
     })
     .then(function(data) {
-        currentUser = data.usuario;
-        userDisplay.textContent = currentUser.nomUsu;
+        currentUser = { nomUsu: data.usuario.nomUsu };
+        userDisplay.textContent = data.usuario.nomUsu;
         isAdmin = data.esAdmin === true;
-        btnAdminPanel.style.display = isAdmin ? 'flex' : 'none';
+        updateHeaderUI();
         showScreen('app');
+        publicSection.style.display = 'none';
+        dashboardSection.style.display = 'block';
+        inPublicBrowsingMode = false;
+        isPublicView = false;
+        loginForm.reset();
         loadCollections();
     })
     .catch(function(error) {
@@ -145,29 +149,25 @@ loginForm.addEventListener('submit', function(e) {
     });
 });
 
+btnGoToRegister.addEventListener('click', function() {
+    hideError(loginError);
+    loginForm.reset();
+    showScreen('register');
+});
+
+btnGoToLogin.addEventListener('click', function() {
+    hideError(registerError);
+    registerForm.reset();
+    showScreen('auth');
+});
+
 registerForm.addEventListener('submit', function(e) {
     e.preventDefault();
     hideError(registerError);
-    
-    const username = document.getElementById('registerUsername').value.trim();
-    const email = document.getElementById('registerEmail').value.trim();
-    const password = document.getElementById('registerPassword').value;
-    
-    if (!username || !email || !password) {
-        showError(registerError, 'Completa todos los campos');
-        return;
-    }
-    
-    if (username.length < 3) {
-        showError(registerError, 'El usuario debe tener al menos 3 caracteres');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showError(registerError, 'La contraseña debe tener al menos 6 caracteres');
-        return;
-    }
-    
+    var username = document.getElementById('registerUsername').value.trim();
+    var email = document.getElementById('registerEmail').value.trim();
+    var password = document.getElementById('registerPassword').value;
+    if (!username || !email || !password) return;
     fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,16 +182,52 @@ registerForm.addEventListener('submit', function(e) {
             return data;
         });
     })
-    .then(function(data) {
-        currentUser = data.usuario;
-        userDisplay.textContent = currentUser.nomUsu;
-        showScreen('app');
-        loadCollections();
+    .then(function() {
+        registerForm.reset();
+        document.getElementById('loginUsername').value = username;
+        showScreen('auth');
+        showError(loginError, 'Cuenta creada correctamente. Inicia sesión.');
     })
     .catch(function(error) {
         showError(registerError, error.message);
     });
 });
+
+function readFileAsDataURL(file) {
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = function() { reject(reader.error); };
+        reader.readAsDataURL(file);
+    });
+}
+
+function updateSwitchLabels() {
+    if (switchPublic.checked) {
+        switchContainer.classList.remove('private');
+        switchContainer.classList.add('public');
+    } else {
+        switchContainer.classList.remove('public');
+        switchContainer.classList.add('private');
+    }
+}
+
+btnLogin.addEventListener('click', function() {
+    showScreen('auth');
+});
+
+function updateHeaderUI() {
+    var loggedIn = currentUser !== null;
+    btnLogin.style.display = loggedIn ? 'none' : 'inline-flex';
+    btnLogout.style.display = loggedIn ? 'inline-flex' : 'none';
+    userDisplay.style.display = loggedIn ? 'inline' : 'none';
+    btnAdminPanel.style.display = loggedIn && isAdmin ? 'flex' : 'none';
+    btnNewCollection.style.display = loggedIn ? 'inline-flex' : 'none';
+    btnDeleteDatabase.style.display = loggedIn ? 'inline-flex' : 'none';
+    btnToggleView.style.display = loggedIn ? 'inline-flex' : 'none';
+    btnBackToMy.style.display = 'inline-flex';
+    btnBackToMy.textContent = loggedIn ? 'Mis Colecciones' : 'Iniciar Sesion';
+}
 
 btnLogout.addEventListener('click', function() {
     fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
@@ -202,13 +238,16 @@ btnLogout.addEventListener('click', function() {
         currentUser = null;
         currentCollectionId = null;
         isAdmin = false;
-        btnAdminPanel.style.display = 'none';
         adminSection.style.display = 'none';
         loginForm.reset();
-        registerForm.reset();
         hideError(loginError);
-        hideError(registerError);
-        showScreen('auth');
+        updateHeaderUI();
+        showScreen('app');
+        dashboardSection.style.display = 'none';
+        publicSection.style.display = 'block';
+        isPublicView = true;
+        inPublicBrowsingMode = true;
+        loadPublicCollections();
     });
 });
 
@@ -255,6 +294,10 @@ function loadPublicCollections() {
 }
 
 function toggleView() {
+    if (!currentUser) {
+        showScreen('auth');
+        return;
+    }
     isPublicView = !isPublicView;
     inPublicBrowsingMode = isPublicView;
     
@@ -272,17 +315,33 @@ function toggleView() {
     }
 }
 
+function backToDashboard() {
+    currentCollectionId = null;
+    detailSection.style.display = 'none';
+    if (currentUser && !inPublicBrowsingMode) {
+        dashboardSection.style.display = 'block';
+        loadCollections();
+    } else {
+        publicSection.style.display = 'block';
+        loadPublicCollections();
+    }
+}
+
 async function openPublicCollection(id) {
     currentCollectionId = id;
     inPublicBrowsingMode = isPublicView;
     dashboardSection.style.display = 'none';
     publicSection.style.display = 'none';
-    detailSection.style.display = 'block';
+            detailSection.style.display = 'block';
     await loadCollectionDetail(id);
     loadItems(id);
 }
 
 function downloadCollection(id, btnElement) {
+    if (!currentUser) {
+        showScreen('auth');
+        return;
+    }
     if (btnElement && btnElement.classList.contains('downloaded')) {
         return;
     }
@@ -295,7 +354,7 @@ function downloadCollection(id, btnElement) {
     .then(function(response) {
         return response.json().then(function(data) {
             if (!response.ok || !data.ok) {
-                throw new Error(data.mensaje || 'Error al descargar');
+                throw new Error(data.mensaje || 'Error al agregar');
             }
             return data;
         });
@@ -303,10 +362,10 @@ function downloadCollection(id, btnElement) {
     .then(function(data) {
         if (btnElement) {
             btnElement.classList.add('downloaded');
-            btnElement.querySelector('span').textContent = 'Descargada';
+            btnElement.textContent = 'Agregada';
         }
         
-        alert('Colección descargada exitosamente');
+        alert('Colección agregada exitosamente');
     })
     .catch(function(error) {
         alert(error.message);
@@ -316,33 +375,29 @@ function downloadCollection(id, btnElement) {
 function renderCollections(colecciones) {
     if (!colecciones || colecciones.length === 0) {
         collectionsGrid.style.display = 'none';
-        dashboardEmpty.style.display = 'block';
+        dashboardEmpty.style.display = 'flex';
         return;
     }
     
     collectionsGrid.style.display = 'grid';
     dashboardEmpty.style.display = 'none';
     
-    const trashIcon = '<svg role="img" aria-label="Eliminar" viewBox="0 0 24 24" width="1rem" height="1rem" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-    
     collectionsGrid.innerHTML = colecciones.map(col => {
-        const porcentaje = col.totalItems > 0 ? Math.round((col.conseguidos / col.totalItems) * 100) : 0;
-        const publicBadge = col.publica ? '<span class="public-badge" style="margin-left: 0.5rem;">Pública</span>' : '';
+        const publicBadge = '';
         
-        return '<div class="collection-card" data-id="' + col.ideCol + '">' +
+        var cardStyle = col.imagenUrl ? ' style="background-image: url(\'' + col.imagenUrl + '\')"' : '';
+        return '<div class="collection-card' + (col.imagenUrl ? ' has-image' : '') + '" data-id="' + col.ideCol + '" data-name="' + escapeHtml(col.nomCol) + '"' + cardStyle + '>' +
             '<div style="display: flex; justify-content: space-between; align-items: start;">' +
-                '<div class="collection-card-icon" style="flex: 1; margin-bottom: 0.5rem;" onclick="openCollection(' + col.ideCol + ')">' +
+                '<div class="collection-card-icon" style="flex: 1; margin-bottom: 0.5rem;">' +
                     (iconSVGs[col.icono] || iconSVGs.star) +
-                    '<span>' + col.nomCol + '</span>' +
+                    '<span>' + escapeHtml(col.nomCol) + '</span>' +
                     publicBadge +
                 '</div>' +
-                '<button class="collection-card-delete" onclick="deleteCollection(' + col.ideCol + ', \'' + col.nomCol + '\')" title="Eliminar coleccion">' +
-                    trashIcon +
-                '</button>' +
+                '<button class="collection-card-delete" title="Eliminar coleccion">Borrar colección</button>' +
             '</div>' +
-            '<div class="collection-card-count" onclick="openCollection(' + col.ideCol + ')">' + col.conseguidos + '/' + col.totalItems + '</div>' +
-            '<div class="collection-card-wish" onclick="openCollection(' + col.ideCol + ')">' + col.deseados + ' en lista de deseos</div>' +
-            '<div class="collection-card-progress" onclick="openCollection(' + col.ideCol + ')">' +
+            '<div class="collection-card-count">' + col.conseguidos + '/' + col.totalItems + '</div>' +
+            '<div class="collection-card-wish">' + col.deseados + ' en lista de deseos</div>' +
+            '<div class="collection-card-progress">' +
                 '<div class="collection-card-progress-conseguidos" style="width: ' + (col.totalItems > 0 ? (col.conseguidos / col.totalItems) * 100 : 0) + '%"></div>' +
                 '<div class="collection-card-progress-deseados" style="width: ' + (col.totalItems > 0 ? (col.deseados / col.totalItems) * 100 : 0) + '%"></div>' +
             '</div>' +
@@ -351,31 +406,43 @@ function renderCollections(colecciones) {
 }
 
 function renderPublicCollections(colecciones) {
+    allPublicCollections = colecciones || [];
+    filterPublicCollections();
+}
+
+function filterPublicCollections() {
+    var searchTerm = document.getElementById('publicSearchInput').value.trim().toLowerCase();
+    var colecciones = searchTerm
+        ? allPublicCollections.filter(function(col) { return col.nomCol.toLowerCase().includes(searchTerm); })
+        : allPublicCollections;
+
     if (!colecciones || colecciones.length === 0) {
         publicGrid.style.display = 'none';
-        publicEmpty.style.display = 'block';
+        publicEmpty.style.display = 'flex';
+        if (searchTerm) {
+            publicEmpty.querySelector('p').textContent = 'No se encontraron colecciones con ese nombre';
+            publicEmpty.querySelector('span').textContent = 'Prueba con otro termino de busqueda';
+        } else {
+            publicEmpty.querySelector('p').textContent = 'No hay colecciones publicas todavia';
+            publicEmpty.querySelector('span').textContent = 'Se el primero en hacer publica tu coleccion';
+        }
         return;
     }
     
     publicGrid.style.display = 'grid';
     publicEmpty.style.display = 'none';
     
-    const downloadIcon = '<svg role="img" aria-label="Descargar" viewBox="0 0 24 24" width="1rem" height="1rem" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>';
-    
-    publicGrid.innerHTML = colecciones.map(col => {
-        return '<div class="collection-card" data-id="' + col.ideCol + '">' +
-            '<div class="collection-card-icon" onclick="openPublicCollection(' + col.ideCol + ')">' +
+    publicGrid.innerHTML = colecciones.map(function(col) {
+        var cardStyle = col.imagenUrl ? ' style="background-image: url(\'' + col.imagenUrl + '\')"' : '';
+        return '<div class="collection-card' + (col.imagenUrl ? ' has-image' : '') + '" data-id="' + col.ideCol + '"' + cardStyle + '>' +
+            '<div class="collection-card-icon">' +
                 (iconSVGs[col.icono] || iconSVGs.star) +
-                '<span>' + col.nomCol + '</span>' +
-                '<span class="public-badge" style="margin-left: 0.5rem;">Por ' + (col.ownerName || 'Anónimo') + '</span>' +
+                '<span>' + escapeHtml(col.nomCol) + '</span>' +
             '</div>' +
-            '<div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.75rem;">' +
-                col.totalItems + ' item' + (col.totalItems !== 1 ? 's' : '') +
+            '<div class="public-card-info">' +
+                col.totalItems + ' elemento' + (col.totalItems !== 1 ? 's' : '') +
             '</div>' +
-            '<button class="btn-download" onclick="downloadCollection(' + col.ideCol + ', this)" title="Descargar coleccion">' +
-                downloadIcon +
-                '<span>Descargar</span>' +
-            '</button>' +
+            '<button class="btn-download" data-action="download" title="Agregar coleccion">Agregar coleccion</button>' +
         '</div>';
     }).join('');
 }
@@ -388,24 +455,24 @@ function openCollection(id) {
     loadItems(id);
 }
 
-function backToDashboard() {
-    currentCollectionId = null;
-    detailSection.style.display = 'none';
-    if (isPublicView) {
-        publicSection.style.display = 'block';
-        loadPublicCollections();
-    } else {
-        inPublicBrowsingMode = false;
-        dashboardSection.style.display = 'block';
-        loadCollections();
-    }
-}
-
 btnBack.addEventListener('click', backToDashboard);
 
 btnToggleView.addEventListener('click', toggleView);
 
+document.getElementById('btnPublicSearch').addEventListener('click', filterPublicCollections);
+
+document.getElementById('publicSearchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        filterPublicCollections();
+    }
+});
+
 btnBackToMy.addEventListener('click', () => {
+    if (!currentUser) {
+        showScreen('auth');
+        return;
+    }
     isPublicView = false;
     inPublicBrowsingMode = false;
     publicSection.style.display = 'none';
@@ -421,6 +488,7 @@ btnDownloadCollection.addEventListener('click', () => {
 });
 
 switchPublic.addEventListener('change', function() {
+    updateSwitchLabels();
     if (!currentCollectionId || !currentIsOwner) return;
     
     fetch('api/colecciones/update?id=' + currentCollectionId, {
@@ -442,17 +510,12 @@ switchPublic.addEventListener('change', function() {
         });
     })
     .then(function(data) {
-        if (switchPublic.checked) {
-            publicBadge.style.display = 'inline-block';
-        } else {
-            publicBadge.style.display = 'none';
-        }
-        
         loadCollections();
     })
     .catch(function(error) {
         alert(error.message);
         switchPublic.checked = !switchPublic.checked;
+        updateSwitchLabels();
     });
 });
 
@@ -472,21 +535,27 @@ function loadCollectionDetail(id) {
     })
     .then(function(data) {
         const col = data.coleccion;
+        const detailHeader = document.querySelector('.detail-header');
         document.getElementById('detailIcon').innerHTML = iconSVGs[col.icono] || iconSVGs.star;
         document.getElementById('detailTitle').textContent = col.nomCol;
         document.getElementById('statConseguidos').textContent = col.conseguidos + ' Conseguidos';
         document.getElementById('statDeseados').textContent = col.deseados + ' Deseados';
         document.getElementById('statTotal').textContent = col.totalItems + ' Total';
         
-        const obtenidosPct = col.totalItems > 0 ? (col.conseguidos / col.totalItems) * 100 : 0;
-        const deseadosPct = col.totalItems > 0 ? (col.deseados / col.totalItems) * 100 : 0;
-        const porcentaje = col.totalItems > 0 ? Math.round((col.conseguidos / col.totalItems) * 100) : 0;
+        if (col.imagenUrl) {
+            detailHeader.style.backgroundImage = 'url("' + col.imagenUrl + '")';
+            detailHeader.classList.add('has-image');
+        } else {
+            detailHeader.style.backgroundImage = '';
+            detailHeader.classList.remove('has-image');
+        }
         
-        document.getElementById('detailProgressPercent').textContent = porcentaje + '%';
-        
-        const progressBar = document.getElementById('detailProgressBar');
-        progressBar.innerHTML = '<div class="detail-progress-obtained" style="width: ' + obtenidosPct + '%"></div>' +
-                               '<div class="detail-progress-wished" style="width: ' + deseadosPct + '%"></div>';
+        const pctCons = col.totalItems > 0 ? (col.conseguidos / col.totalItems) * 100 : 0;
+        const pctDes = col.totalItems > 0 ? (col.deseados / col.totalItems) * 100 : 0;
+
+        document.getElementById('detailProgressPercent').textContent = Math.round(pctCons) + '%';
+        document.getElementById('detailProgressFillCons').style.width = pctCons + '%';
+        document.getElementById('detailProgressFillDes').style.width = pctDes + '%';
         
         currentIsOwner = data.isOwner !== undefined ? data.isOwner : true;
         
@@ -495,16 +564,14 @@ function loadCollectionDetail(id) {
         if (currentIsOwner && !inPublicBrowsingMode) {
             switchContainer.style.display = 'flex';
             switchPublic.checked = col.publica || false;
+            updateSwitchLabels();
             btnDeleteCollection.style.display = 'flex';
             btnDownloadCollection.style.display = 'none';
-            publicBadge.style.display = col.publica ? 'inline-block' : 'none';
             addItemSection.style.display = 'block';
         } else {
             switchContainer.style.display = 'none';
             btnDeleteCollection.style.display = 'none';
             btnDownloadCollection.style.display = 'flex';
-            publicBadge.style.display = 'inline-block';
-            publicBadge.textContent = 'Pública - Por ' + (col.ownerName || 'Anónimo');
             addItemSection.style.display = 'none';
         }
         
@@ -538,42 +605,75 @@ function loadItems(coleccionId) {
 
 function renderItems(items) {
     if (!items || items.length === 0) {
-        if (currentIsOwner && !inPublicBrowsingMode) {
-            itemsList.innerHTML = '<div class="empty-state"><p>No hay items en esta coleccion</p><span>Añade tu primer item abajo</span></div>';
-        } else {
-            itemsList.innerHTML = '<div class="empty-state"><p>No hay items en esta coleccion</p></div>';
-        }
+            if (currentIsOwner && !inPublicBrowsingMode) {
+                itemsList.innerHTML = '<div class="empty-state"><p>No hay elementos en esta colección</p><span>Añade tu primer elemento arriba</span></div>';
+            } else {
+                itemsList.innerHTML = '<div class="empty-state"><p>No hay elementos en esta colección</p></div>';
+            }
         return;
     }
     
     if (!currentIsOwner || inPublicBrowsingMode) {
-        itemsList.innerHTML = '<div class="public-items-list">' +
-            items.map(item => '<div class="public-item-name">' + item.nomItem + '</div>').join('') +
-        '</div>';
-        return;
-    }
-    
-    itemsList.innerHTML = items.map(item => {
-        const tiene = item.estado === 'conseguido';
-        const deseado = item.estado === 'deseado';
-        const badgeClass = 'badge-' + item.estado;
-        const badgeText = item.estado === 'conseguido' ? '✓ Conseguido' : 
-                          item.estado === 'deseado' ? '★ Deseado' : '- Ninguno';
-        
-        return '<div class="item-card estado-' + item.estado + '" data-id="' + item.ideItem + '">' +
-            '<div class="item-checkboxes">' +
-                '<label class="item-checkbox ' + (tiene ? 'checked' : '') + '">' +
-                    '<input type="checkbox" ' + (tiene ? 'checked' : '') + ' onchange="toggleItemStatus(' + item.ideItem + ', \'conseguido\', this.checked)">' +
-                    '<span>Tengo</span>' +
-                '</label>' +
-                '<label class="item-checkbox ' + (deseado ? 'checked' : '') + '">' +
-                    '<input type="checkbox" ' + (deseado ? 'checked' : '') + ' onchange="toggleItemStatus(' + item.ideItem + ', \'deseado\', this.checked)">' +
-                    '<span>Deseo</span>' +
-                '</label>' +
+    itemsList.innerHTML = items.map(function(item) {
+        var imgHtml;
+        if (item.imagenUrl) {
+            imgHtml = '<img class="item-thumbnail" src="' + escapeHtml(item.imagenUrl) + '" alt="" width="40" height="40" loading="lazy">';
+        } else {
+            imgHtml = '<div class="item-thumbnail item-thumbnail-placeholder"><svg aria-hidden="true" viewBox="0 0 24 24" width="1.25rem" height="1.25rem" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>';
+        }
+        return '<div class="item-card">' +
+            '<div class="item-info">' +
+                imgHtml +
+                '<div style="display: flex; flex-direction: column; min-width: 0;">' +
+                    '<span class="item-name">' + escapeHtml(item.nomItem) + '</span>' +
+                    (item.observaciones ? '<span class="item-observaciones">' + escapeHtml(item.observaciones) + '</span>' : '') +
+                '</div>' +
             '</div>' +
-            '<span class="item-name">' + item.nomItem + '</span>' +
-            '<span class="item-status-badge ' + badgeClass + '">' + badgeText + '</span>' +
-            '<button class="item-delete-btn" onclick="deleteItem(' + item.ideItem + ')">Eliminar</button>' +
+        '</div>';
+    }).join('');
+    return;
+}
+
+itemsList.innerHTML = items.map(function(item) {
+        var imgHtml;
+        if (item.imagenUrl) {
+            imgHtml = '<img class="item-thumbnail" src="' + escapeHtml(item.imagenUrl) + '" alt="" width="40" height="40" loading="lazy">';
+        } else {
+            imgHtml = '<div class="item-thumbnail item-thumbnail-placeholder"><svg aria-hidden="true" viewBox="0 0 24 24" width="1.25rem" height="1.25rem" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>';
+        }
+
+        var statusIcon, statusText, statusBtnClass;
+        if (item.estado === 'conseguido') {
+            statusIcon = '<svg aria-hidden="true" viewBox="0 0 24 24" width="0.875rem" height="0.875rem" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+            statusText = 'Conseguido';
+            statusBtnClass = 'btn-status-conseguido';
+        } else if (item.estado === 'deseado') {
+            statusIcon = '<svg aria-hidden="true" viewBox="0 0 24 24" width="0.875rem" height="0.875rem" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+            statusText = 'Deseado';
+            statusBtnClass = 'btn-status-deseado';
+        } else {
+            statusIcon = '';
+            statusText = 'Ninguno';
+            statusBtnClass = 'btn-status-ninguno';
+        }
+        
+        var obsHtml = '<textarea class="item-observaciones-input" data-item-id="' + item.ideItem + '" placeholder="+ Observaciones" rows="1">' + escapeHtml(item.observaciones || '') + '</textarea>';
+
+        return '<div class="item-card estado-' + item.estado + '" data-id="' + item.ideItem + '">' +
+            '<div class="item-info">' +
+                imgHtml +
+                '<div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">' +
+                    '<span class="item-name">' + escapeHtml(item.nomItem) + '</span>' +
+                    obsHtml +
+                '</div>' +
+            '</div>' +
+            '<div class="item-actions">' +
+                '<button class="btn-status ' + statusBtnClass + '" data-item-id="' + item.ideItem + '" data-status="' + item.estado + '">' +
+                    statusIcon +
+                    '<span>' + statusText + '</span>' +
+                '</button>' +
+                '<button class="btn-outline-danger" data-item-id="' + item.ideItem + '" data-action="delete">Eliminar</button>' +
+            '</div>' +
         '</div>';
     }).join('');
 }
@@ -606,30 +706,29 @@ function toggleItemStatus(itemId, status, checked) {
 }
 
 function deleteItem(itemId) {
-    if (!confirm('¿Estas seguro de que quieres eliminar este item?')) {
-        return;
-    }
-    
-    fetch('api/items/delete?id=' + itemId, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin'
-    })
-    .then(function(response) {
-        return response.json().then(function(data) {
-            if (!response.ok || !data.ok) {
-                throw new Error(data.mensaje || 'Error al eliminar item');
-            }
-            return data;
+    showConfirmModal('Eliminar elemento', '¿Estás seguro de que quieres eliminar este elemento?', function() {
+        fetch('api/items/delete?id=' + itemId, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin'
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                if (!response.ok || !data.ok) {
+                    throw new Error(data.mensaje || 'Error al eliminar item');
+                }
+                return data;
+            });
+        })
+        .then(function(data) {
+            hideConfirmModal();
+            loadItems(currentCollectionId);
+            loadCollectionDetail(currentCollectionId);
+            loadCollections();
+        })
+        .catch(function(error) {
+            alert(error.message);
         });
-    })
-    .then(function(data) {
-        loadItems(currentCollectionId);
-        loadCollectionDetail(currentCollectionId);
-        loadCollections();
-    })
-    .catch(function(error) {
-        alert(error.message);
     });
 }
 
@@ -756,15 +855,26 @@ modalOverlay.addEventListener('click', (e) => {
     }
 });
 
-formAddItem.addEventListener('submit', function(e) {
+formAddItem.addEventListener('submit', async function(e) {
     e.preventDefault();
     const nombre = document.getElementById('itemNombre').value.trim();
     const estado = document.getElementById('itemEstado').value;
+    const obsText = itemObservaciones.value.trim() || null;
     if (!nombre || !currentCollectionId) return;
+    var imagenUrl = null;
+    var fileInput = document.getElementById('itemImagenFile');
+    if (fileInput.files && fileInput.files[0]) {
+        try {
+            imagenUrl = await readFileAsDataURL(fileInput.files[0]);
+        } catch (err) {
+            alert('Error al leer la imagen');
+            return;
+        }
+    }
     fetch('api/items/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coleccion: currentCollectionId, nombre: nombre, estado: estado }),
+        body: JSON.stringify({ coleccion: currentCollectionId, nombre: nombre, estado: estado, imagenUrl: imagenUrl, observaciones: obsText }),
         credentials: 'same-origin'
     })
     .then(function(response) {
@@ -778,6 +888,8 @@ formAddItem.addEventListener('submit', function(e) {
     .then(function(data) {
         document.getElementById('itemNombre').value = '';
         document.getElementById('itemEstado').value = 'ninguno';
+        itemObservaciones.value = '';
+        itemImagenFile.value = '';
         loadItems(currentCollectionId);
         loadCollectionDetail(currentCollectionId);
     })
@@ -793,14 +905,24 @@ document.querySelector('.icon-options')?.addEventListener('click', (e) => {
     updateIconSelection();
 });
 
-formNewCollection.addEventListener('submit', function(e) {
+formNewCollection.addEventListener('submit', async function(e) {
     e.preventDefault();
     const nombre = document.getElementById('collectionName').value.trim();
     if (!nombre) return;
+    var imagenUrl = null;
+    var fileInput = document.getElementById('collectionImage');
+    if (fileInput.files && fileInput.files[0]) {
+        try {
+            imagenUrl = await readFileAsDataURL(fileInput.files[0]);
+        } catch (err) {
+            alert('Error al leer la imagen');
+            return;
+        }
+    }
     fetch('api/colecciones/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombre, icono: selectedIcon }),
+        body: JSON.stringify({ nombre: nombre, icono: selectedIcon, imagenUrl: imagenUrl }),
         credentials: 'same-origin'
     })
     .then(function(response) {
@@ -816,6 +938,7 @@ formNewCollection.addEventListener('submit', function(e) {
         formNewCollection.reset();
         selectedIcon = 'star';
         updateIconSelection();
+        document.getElementById('collectionImage').value = '';
         loadCollections();
     })
     .catch(function(error) {
@@ -834,7 +957,7 @@ function toggleAdminPanel() {
         dashboardSection.style.display = 'none';
         publicSection.style.display = 'none';
         detailSection.style.display = 'none';
-        adminSection.style.display = 'block';
+        adminSection.style.display = 'flex';
         loadAdminCollections();
         loadAdminBannedUsers();
     } else {
@@ -877,25 +1000,22 @@ function renderAdminCollections(colecciones) {
     if (!colecciones || colecciones.length === 0) {
         adminTableBody.innerHTML = '';
         document.querySelector('.admin-table').style.display = 'none';
-        adminEmpty.style.display = 'block';
+        adminEmpty.style.display = 'flex';
         return;
     }
     
     document.querySelector('.admin-table').style.display = 'table';
     adminEmpty.style.display = 'none';
-    
-    const deleteIcon = '<svg role="img" aria-label="Eliminar" viewBox="0 0 24 24" width="1rem" height="1rem" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-    const banIcon = '<svg role="img" aria-label="Banear usuario" viewBox="0 0 24 24" width="1rem" height="1rem" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/></svg>';
-    
+
     adminTableBody.innerHTML = colecciones.map(col => {
         const ownerName = col.ownerName || 'Desconocido';
         return '<tr>' +
-            '<td>' + (iconSVGs[col.icono] || iconSVGs.star) + ' ' + col.nomCol + '</td>' +
-            '<td>' + ownerName + '</td>' +
+            '<td><strong>' + escapeHtml(col.nomCol) + '</strong></td>' +
+            '<td>' + escapeHtml(ownerName) + '</td>' +
             '<td>' + col.totalItems + '</td>' +
             '<td class="admin-actions">' +
-                '<button class="btn-admin-delete" onclick="adminDeleteCollection(' + col.ideCol + ', \'' + col.nomCol.replace(/'/g, "\\'") + '\')" title="Eliminar">' + deleteIcon + ' Eliminar</button>' +
-                '<button class="btn-admin-ban" onclick="adminBanUser(' + col.ideUsu + ', \'' + ownerName.replace(/'/g, "\\'") + '\')" title="Banear usuario">' + banIcon + ' Banear</button>' +
+                '<button class="btn-admin-delete" data-action="admin-delete" data-id="' + col.ideCol + '" data-name="' + escapeHtml(col.nomCol) + '">Eliminar</button>' +
+                '<button class="btn-admin-ban" data-action="admin-ban" data-user-id="' + col.ideUsu + '" data-name="' + escapeHtml(ownerName) + '">Banear</button>' +
             '</td>' +
         '</tr>';
     }).join('');
@@ -987,20 +1107,18 @@ function renderAdminBannedUsers(usuarios) {
     if (!usuarios || usuarios.length === 0) {
         adminBannedBody.innerHTML = '';
         document.querySelectorAll('.admin-table')[1].style.display = 'none';
-        adminBannedEmpty.style.display = 'block';
+        adminBannedEmpty.style.display = 'flex';
         return;
     }
     
     document.querySelectorAll('.admin-table')[1].style.display = 'table';
     adminBannedEmpty.style.display = 'none';
-    
-    const unbanIcon = '<svg role="img" aria-label="Desbanear usuario" viewBox="0 0 24 24" width="1rem" height="1rem" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>';
-    
+
     adminBannedBody.innerHTML = usuarios.map(usu => {
         return '<tr>' +
-            '<td>' + usu.nomUsu + '</td>' +
+            '<td>' + escapeHtml(usu.nomUsu) + '</td>' +
             '<td class="admin-actions">' +
-                '<button class="btn-admin-unban" onclick="adminUnbanUser(' +usu.ideUsu + ', \'' + usu.nomUsu.replace(/'/g, "\\'") + '\')" title="Desbanear usuario">' + unbanIcon + ' Desbanear</button>' +
+                '<button class="btn-admin-unban" data-action="admin-unban" data-id="' + usu.ideUsu + '" data-name="' + escapeHtml(usu.nomUsu) + '">Desbanear</button>' +
             '</td>' +
         '</tr>';
     }).join('');
@@ -1047,21 +1165,177 @@ function checkSession() {
         if (response.ok) {
             return response.json().then(function(data) {
                 if (data.ok) {
+                    currentUser = { nomUsu: data.nomUsu };
+                    userDisplay.textContent = data.nomUsu;
+                    isAdmin = data.esAdmin === true;
+                    updateHeaderUI();
+                    publicSection.style.display = 'none';
+                    dashboardSection.style.display = 'block';
+                    inPublicBrowsingMode = false;
+                    isPublicView = false;
                     renderCollections(data.colecciones);
-                    showScreen('app');
-                } else {
-                    showScreen('auth');
                 }
             });
-        } else {
-            showScreen('auth');
         }
     })
-    .catch(function(error) {
-        showScreen('auth');
-    });
+    .catch(function(error) { console.error('Error al verificar sesion:', error); });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadPublicCollections();
     checkSession();
 });
+
+function openImageModal(url) {
+    if (!url) return;
+    imageModalImg.src = url;
+    imageModal.style.display = 'flex';
+}
+
+function closeImageModal() {
+    imageModal.style.display = 'none';
+    imageModalImg.src = '';
+}
+
+btnCloseImageModal.addEventListener('click', closeImageModal);
+
+imageModal.addEventListener('click', function(e) {
+    if (e.target === imageModal) {
+        closeImageModal();
+    }
+});
+
+itemsList.addEventListener('click', function(e) {
+    const statusBtn = e.target.closest('.btn-status');
+    if (statusBtn) {
+        e.preventDefault();
+        const itemId = parseInt(statusBtn.dataset.itemId);
+        const currentStatus = statusBtn.dataset.status;
+        let nextStatus;
+        if (currentStatus === 'ninguno') {
+            nextStatus = 'conseguido';
+        } else if (currentStatus === 'conseguido') {
+            nextStatus = 'deseado';
+        } else {
+            nextStatus = 'ninguno';
+        }
+        toggleItemStatus(itemId, nextStatus, nextStatus !== 'ninguno');
+        return;
+    }
+
+    const deleteBtn = e.target.closest('[data-action="delete"]');
+    if (deleteBtn) {
+        e.preventDefault();
+        const itemId = parseInt(deleteBtn.dataset.itemId);
+        deleteItem(itemId);
+        return;
+    }
+
+    const obsInput = e.target.closest('.item-observaciones-input');
+    if (obsInput) {
+        return;
+    }
+
+    const img = e.target.closest('.item-thumbnail');
+    if (img && img.tagName === 'IMG') {
+        openImageModal(img.src);
+        return;
+    }
+});
+
+collectionsGrid.addEventListener('click', function(e) {
+    const deleteBtn = e.target.closest('.collection-card-delete');
+    if (deleteBtn) {
+        e.stopPropagation();
+        const card = deleteBtn.closest('.collection-card');
+        if (card) {
+            const id = parseInt(card.dataset.id);
+            const name = card.dataset.name;
+            deleteCollection(id, name);
+        }
+        return;
+    }
+
+    const card = e.target.closest('.collection-card');
+    if (card) {
+        const id = parseInt(card.dataset.id);
+        openCollection(id);
+    }
+});
+
+itemsList.addEventListener('focusout', function(e) {
+    const textarea = e.target.closest('.item-observaciones-input');
+    if (!textarea) return;
+    const itemId = parseInt(textarea.dataset.itemId);
+    if (!itemId) return;
+    var oldValue = textarea.defaultValue || '';
+    var newValue = textarea.value.trim();
+    if (newValue === oldValue) return;
+    fetch('api/items/update?id=' + itemId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ observaciones: newValue || '' }),
+        credentials: 'same-origin'
+    })
+    .then(function(response) {
+        return response.json().then(function(data) {
+            if (!response.ok || !data.ok) {
+                throw new Error(data.mensaje || 'Error al actualizar');
+            }
+            return data;
+        });
+    })
+    .then(function(data) {
+        loadItems(currentCollectionId);
+    })
+    .catch(function(error) {
+        alert(error.message);
+    });
+});
+
+publicGrid.addEventListener('click', function(e) {
+    const downloadBtn = e.target.closest('[data-action="download"]');
+    if (downloadBtn) {
+        e.stopPropagation();
+        const card = downloadBtn.closest('.collection-card');
+        if (card) {
+            const id = parseInt(card.dataset.id);
+            downloadCollection(id, downloadBtn);
+        }
+        return;
+    }
+
+    const card = e.target.closest('.collection-card');
+    if (card) {
+        const id = parseInt(card.dataset.id);
+        openPublicCollection(id);
+    }
+});
+
+adminTableBody.addEventListener('click', function(e) {
+    const deleteBtn = e.target.closest('[data-action="admin-delete"]');
+    if (deleteBtn) {
+        const id = parseInt(deleteBtn.dataset.id);
+        const name = deleteBtn.dataset.name;
+        adminDeleteCollection(id, name);
+        return;
+    }
+
+    const banBtn = e.target.closest('[data-action="admin-ban"]');
+    if (banBtn) {
+        const userId = parseInt(banBtn.dataset.userId);
+        const name = banBtn.dataset.name;
+        adminBanUser(userId, name);
+    }
+});
+
+adminBannedBody.addEventListener('click', function(e) {
+    const unbanBtn = e.target.closest('[data-action="admin-unban"]');
+    if (unbanBtn) {
+        const id = parseInt(unbanBtn.dataset.id);
+        const name = unbanBtn.dataset.name;
+        adminUnbanUser(id, name);
+    }
+});
+
+

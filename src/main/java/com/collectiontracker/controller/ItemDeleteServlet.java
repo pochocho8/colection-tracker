@@ -50,7 +50,7 @@ public class ItemDeleteServlet extends HttpServlet {
             
             Map<String, Object> res = new HashMap<>();
             res.put("ok", result);
-            res.put("mensaje", result ? "Item eliminado" : "Error al eliminar");
+            res.put("mensaje", result ? "Elemento eliminado" : "Error al eliminar");
             response.getWriter().write(gson.toJson(res));
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

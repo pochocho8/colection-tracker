@@ -56,6 +56,7 @@ public class AuthLoginServlet extends HttpServlet {
                 session.setAttribute("email", usuario.getEmailUsu());
                 
                 boolean esAdmin = AdminHelper.isAdmin(usuario.getEmailUsu());
+                session.setAttribute("isAdmin", esAdmin);
                 
                 Map<String, Object> res = new HashMap<>();
                 res.put("ok", true);

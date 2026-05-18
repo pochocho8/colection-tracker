@@ -21,4 +21,38 @@ public class ItemUpdateDAO {
         }
         return result;
     }
+
+    public boolean updateItemImage(int ideItem, String imagenUrl, int ideUsu) {
+        boolean result = false;
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "UPDATE items i JOIN colecciones c ON i.ide_col = c.ide_col SET i.imagen_url = ? WHERE i.ide_item = ? AND c.ide_usu = ?"
+             )) {
+            stmt.setString(1, imagenUrl);
+            stmt.setInt(2, ideItem);
+            stmt.setInt(3, ideUsu);
+            int rows = stmt.executeUpdate();
+            result = rows > 0;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    public boolean updateItemObservaciones(int ideItem, String observaciones, int ideUsu) {
+        boolean result = false;
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "UPDATE items i JOIN colecciones c ON i.ide_col = c.ide_col SET i.observaciones = ? WHERE i.ide_item = ? AND c.ide_usu = ?"
+             )) {
+            stmt.setString(1, observaciones);
+            stmt.setInt(2, ideItem);
+            stmt.setInt(3, ideUsu);
+            int rows = stmt.executeUpdate();
+            result = rows > 0;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
 }

@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS colecciones (
     nom_col VARCHAR(150) NOT NULL,
     icono VARCHAR(50) DEFAULT 'collection',
     publica TINYINT(1) DEFAULT 0,
+    imagen_url MEDIUMTEXT DEFAULT NULL,
     PRIMARY KEY (ide_col),
     FOREIGN KEY (ide_usu) REFERENCES usuarios(ide_usu) ON DELETE CASCADE
 );
@@ -39,6 +40,8 @@ CREATE TABLE IF NOT EXISTS items (
     ide_col INT NOT NULL,
     nom_item VARCHAR(150) NOT NULL,
     estado ENUM('ninguno', 'conseguido', 'deseado') DEFAULT 'ninguno',
+    imagen_url MEDIUMTEXT DEFAULT NULL,
+    observaciones TEXT DEFAULT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (ide_item),
     FOREIGN KEY (ide_col) REFERENCES colecciones(ide_col) ON DELETE CASCADE
@@ -74,6 +77,49 @@ DELIMITER ;
 CALL add_baneado_column();
 DROP PROCEDURE IF EXISTS add_baneado_column;
 
+DROP PROCEDURE IF EXISTS add_col_imagen_url;
+DELIMITER //
+CREATE PROCEDURE add_col_imagen_url()
+BEGIN
+    IF NOT EXISTS (
+        SELECT * FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = 'collection_db' AND TABLE_NAME = 'colecciones' AND COLUMN_NAME = 'imagen_url'
+    ) THEN
+        ALTER TABLE colecciones ADD COLUMN imagen_url MEDIUMTEXT DEFAULT NULL;
+    END IF;
+END //
+DELIMITER ;
+CALL add_col_imagen_url();
+DROP PROCEDURE IF EXISTS add_col_imagen_url;
 
+DROP PROCEDURE IF EXISTS add_item_observaciones;
+DELIMITER //
+CREATE PROCEDURE add_item_observaciones()
+BEGIN
+    IF NOT EXISTS (
+        SELECT * FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = 'collection_db' AND TABLE_NAME = 'items' AND COLUMN_NAME = 'observaciones'
+    ) THEN
+        ALTER TABLE items ADD COLUMN observaciones TEXT DEFAULT NULL;
+    END IF;
+END //
+DELIMITER ;
+CALL add_item_observaciones();
+DROP PROCEDURE IF EXISTS add_item_observaciones;
+
+DROP PROCEDURE IF EXISTS widen_item_imagen_url;
+DELIMITER //
+CREATE PROCEDURE widen_item_imagen_url()
+BEGIN
+    IF EXISTS (
+        SELECT * FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = 'collection_db' AND TABLE_NAME = 'items' AND COLUMN_NAME = 'imagen_url' AND DATA_TYPE = 'varchar'
+    ) THEN
+        ALTER TABLE items MODIFY COLUMN imagen_url MEDIUMTEXT DEFAULT NULL;
+    END IF;
+END //
+DELIMITER ;
+CALL widen_item_imagen_url();
+DROP PROCEDURE IF EXISTS widen_item_imagen_url;
 
 

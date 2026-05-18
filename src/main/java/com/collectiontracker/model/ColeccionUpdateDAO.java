@@ -25,4 +25,23 @@ public class ColeccionUpdateDAO {
         }
         return result;
     }
+
+    public boolean updateCollectionImage(int ideCol, int ideUsu, String imagenUrl) {
+        boolean result = false;
+        try {
+            Connection conn = ConexionBD.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE colecciones SET imagen_url = ? WHERE ide_col = ? AND ide_usu = ?"
+            );
+            stmt.setString(1, imagenUrl);
+            stmt.setInt(2, ideCol);
+            stmt.setInt(3, ideUsu);
+            int rows = stmt.executeUpdate();
+            result = rows > 0;
+            conn.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
 }

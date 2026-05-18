@@ -7,17 +7,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 public class ItemCreateDAO {
-    public Item createItem(int ideCol, String nomItem, String estado) {
+    public Item createItem(int ideCol, String nomItem, String estado, String imagenUrl, String observaciones) {
         Item item = null;
         try {
             Connection conn = ConexionBD.getConnection();
             PreparedStatement stmt = conn.prepareStatement(
-                "INSERT INTO items (ide_col, nom_item, estado) VALUES (?, ?, ?)",
+                "INSERT INTO items (ide_col, nom_item, estado, imagen_url, observaciones) VALUES (?, ?, ?, ?, ?)",
                 PreparedStatement.RETURN_GENERATED_KEYS
             );
             stmt.setInt(1, ideCol);
             stmt.setString(2, nomItem);
             stmt.setString(3, estado);
+            stmt.setString(4, imagenUrl);
+            stmt.setString(5, observaciones);
             stmt.executeUpdate();
             
             ResultSet rs = stmt.getGeneratedKeys();
@@ -27,6 +29,7 @@ public class ItemCreateDAO {
                 item.setIdeCol(ideCol);
                 item.setNomItem(nomItem);
                 item.setEstado(estado);
+                item.setImagenUrl(imagenUrl);
             }
             conn.close();
         } catch (Exception e) {
