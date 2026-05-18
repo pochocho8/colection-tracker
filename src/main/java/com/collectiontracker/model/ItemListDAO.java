@@ -52,6 +52,7 @@ public class ItemListDAO {
                 "WHERE i.ide_col = ? AND c.publica = 1 " +
                 "ORDER BY i.ide_item ASC"
             );
+            stmt.setInt(1, ideCol);
             ResultSet rs = stmt.executeQuery();
             
             while (rs.next()) {
