@@ -11,6 +11,7 @@ public class Coleccion {
     private String ownerName;
     private int ideUsu;
     private String imagenUrl;
+    private boolean descargada;
 
     public Coleccion() {
     }
@@ -99,5 +100,13 @@ public class Coleccion {
 
     public void setImagenUrl(String imagenUrl) {
         this.imagenUrl = imagenUrl;
+    }
+
+    public boolean isDescargada() {
+        return descargada;
+    }
+
+    public void setDescargada(boolean descargada) {
+        this.descargada = descargada;
     }
 }

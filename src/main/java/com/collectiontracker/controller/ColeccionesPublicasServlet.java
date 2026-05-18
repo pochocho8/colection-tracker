@@ -8,6 +8,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
@@ -22,8 +23,13 @@ public class ColeccionesPublicasServlet extends HttpServlet {
         Gson gson = new Gson();
         
         try {
+            HttpSession session = req.getSession(false);
+            int ideUsu = -1;
+            if (session != null && session.getAttribute("userId") != null) {
+                ideUsu = (int) session.getAttribute("userId");
+            }
             ColeccionListDAO dao = new ColeccionListDAO();
-            List<Coleccion> colecciones = dao.getPublicCollections();
+            List<Coleccion> colecciones = dao.getPublicCollections(ideUsu);
             
             String json = gson.toJson(new RespuestaPublicas(true, colecciones, colecciones.size()));
             resp.getWriter().write(json);

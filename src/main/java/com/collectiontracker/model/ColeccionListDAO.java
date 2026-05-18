@@ -47,6 +47,10 @@ public class ColeccionListDAO {
     }
 
     public List<Coleccion> getPublicCollections() {
+        return getPublicCollections(-1);
+    }
+
+    public List<Coleccion> getPublicCollections(int ideUsu) {
         List<Coleccion> list = new ArrayList<>();
         try {
             Connection conn = ConexionBD.getConnection();
@@ -75,6 +79,10 @@ public class ColeccionListDAO {
                 col.setTotalItems(rs.getInt("total_items"));
                 col.setConseguidos(rs.getInt("conseguidos"));
                 col.setDeseados(rs.getInt("deseados"));
+                if (ideUsu > 0) {
+                    ColeccionDownloadDAO dlDao = new ColeccionDownloadDAO();
+                    col.setDescargada(dlDao.hasUserDownloaded(ideUsu, col.getIdeCol()));
+                }
                 list.add(col);
             }
             conn.close();

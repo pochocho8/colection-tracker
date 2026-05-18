@@ -370,8 +370,6 @@ function downloadCollection(id, btnElement) {
             btnElement.classList.add('downloaded');
             btnElement.textContent = 'Agregada';
         }
-        
-        alert('Colección agregada exitosamente');
     })
     .catch(function(error) {
         alert(error.message);
@@ -440,6 +438,8 @@ function filterPublicCollections() {
     
     publicGrid.innerHTML = colecciones.map(function(col) {
         var cardStyle = col.imagenUrl ? ' style="background-image: url(\'' + col.imagenUrl + '\')"' : '';
+        var btnClass = col.descargada ? ' btn-download downloaded' : ' btn-download';
+        var btnText = col.descargada ? 'Agregada' : 'Agregar coleccion';
         return '<div class="collection-card' + (col.imagenUrl ? ' has-image' : '') + '" data-id="' + col.ideCol + '"' + cardStyle + '>' +
             '<div class="collection-card-icon">' +
                 (iconSVGs[col.icono] || iconSVGs.star) +
@@ -448,7 +448,7 @@ function filterPublicCollections() {
             '<div class="public-card-info">' +
                 col.totalItems + ' elemento' + (col.totalItems !== 1 ? 's' : '') +
             '</div>' +
-            '<button class="btn-download" data-action="download" title="Agregar coleccion">Agregar coleccion</button>' +
+            '<button class="' + btnClass + '" data-action="download" title="Agregar coleccion">' + btnText + '</button>' +
         '</div>';
     }).join('');
 }
