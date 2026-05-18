@@ -334,10 +334,6 @@ function backToDashboard() {
 }
 
 async function openPublicCollection(id) {
-    if (!currentUser) {
-        showScreen('auth');
-        return;
-    }
     currentCollectionId = id;
     inPublicBrowsingMode = isPublicView;
     dashboardSection.style.display = 'none';

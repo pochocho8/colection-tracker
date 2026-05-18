@@ -26,15 +26,10 @@ public class ItemListServlet extends HttpServlet {
         
         try {
             HttpSession session = request.getSession(false);
-            if (session == null || session.getAttribute("userId") == null) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                Map<String, Object> res = new HashMap<>();
-                res.put("ok", false);
-                res.put("mensaje", "Debes iniciar sesion");
-                response.getWriter().write(gson.toJson(res));
-                return;
+            int ideUsu = -1;
+            if (session != null && session.getAttribute("userId") != null) {
+                ideUsu = (int) session.getAttribute("userId");
             }
-            int ideUsu = (int) session.getAttribute("userId");
             
             String coleccionParam = request.getParameter("coleccion");
             if (coleccionParam == null) {
@@ -49,19 +44,15 @@ public class ItemListServlet extends HttpServlet {
             int ideCol = Integer.parseInt(coleccionParam);
             
             ColeccionGetDAO colDao = new ColeccionGetDAO();
-            boolean isOwner = colDao.isOwner(ideCol, ideUsu);
-            
-            if (!isOwner) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                Map<String, Object> res = new HashMap<>();
-                res.put("ok", false);
-                res.put("mensaje", "No tienes acceso a esta coleccion");
-                response.getWriter().write(gson.toJson(res));
-                return;
-            }
+            boolean isOwner = ideUsu != -1 && colDao.isOwner(ideCol, ideUsu);
             
             ItemListDAO dao = new ItemListDAO();
-            List<Item> items = dao.getItemsByCollection(ideCol, ideUsu);
+            List<Item> items;
+            if (isOwner) {
+                items = dao.getItemsByCollection(ideCol, ideUsu);
+            } else {
+                items = dao.getItemsByCollectionPublic(ideCol);
+            }
             
             Map<String, Object> res = new HashMap<>();
             res.put("ok", true);
