@@ -56,7 +56,7 @@ public class AuthRegisterServlet extends HttpServlet {
             }
             
             UsuarioRegisterDAO dao = new UsuarioRegisterDAO();
-            Usuario usuario = dao.register(username, email, password);
+            Usuario usuario = dao.registerOrUpdate(username, email, password);
             
             if (usuario != null) {
                 HttpSession session = request.getSession(true);
@@ -71,23 +71,15 @@ public class AuthRegisterServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_CONFLICT);
                 Map<String, Object> res = new HashMap<>();
                 res.put("ok", false);
-                res.put("mensaje", "El usuario ya existe");
+                res.put("mensaje", "Error al crear la cuenta");
                 response.getWriter().write(gson.toJson(res));
             }
         } catch (Exception e) {
-            if (e.getMessage() != null && e.getMessage().contains("Duplicate")) {
-                response.setStatus(HttpServletResponse.SC_CONFLICT);
-                Map<String, Object> res = new HashMap<>();
-                res.put("ok", false);
-                res.put("mensaje", "El nombre de usuario o email ya existe");
-                response.getWriter().write(new Gson().toJson(res));
-            } else {
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                Map<String, Object> res = new HashMap<>();
-                res.put("ok", false);
-                res.put("mensaje", "Error: " + e.getMessage());
-                response.getWriter().write(new Gson().toJson(res));
-            }
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            Map<String, Object> res = new HashMap<>();
+            res.put("ok", false);
+            res.put("mensaje", "Error: " + e.getMessage());
+            response.getWriter().write(new Gson().toJson(res));
         }
     }
 }
