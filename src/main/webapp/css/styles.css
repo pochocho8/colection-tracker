@@ -626,6 +626,7 @@ input, select {
     overflow: hidden;
     display: flex;
     gap: 0.125rem;
+    border: 0.0625rem solid black;
 }
 
 .collection-card-delete {
@@ -946,6 +947,7 @@ input, select {
     overflow: hidden;
     display: flex;
     gap: 0.125rem;
+    border: 0.0625rem solid black;
 }
 
 .progress-fill-conseguidos {
