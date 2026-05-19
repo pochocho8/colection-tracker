@@ -417,6 +417,7 @@ function renderCollections(colecciones) {
             '<div class="collection-card-progress">' +
                 '<div class="collection-card-progress-conseguidos" style="width: ' + (col.totalItems > 0 ? (col.conseguidos / col.totalItems) * 100 : 0) + '%"></div>' +
                 '<div class="collection-card-progress-deseados" style="width: ' + (col.totalItems > 0 ? (col.deseados / col.totalItems) * 100 : 0) + '%"></div>' +
+                '<div class="collection-card-progress-ninguno" style="width: ' + (col.totalItems > 0 ? ((col.totalItems - col.conseguidos - col.deseados) / col.totalItems) * 100 : 100) + '%"></div>' +
             '</div>' +
         '</div>';
     }).join('');
@@ -571,10 +572,12 @@ function loadCollectionDetail(id) {
         
         const pctCons = col.totalItems > 0 ? (col.conseguidos / col.totalItems) * 100 : 0;
         const pctDes = col.totalItems > 0 ? (col.deseados / col.totalItems) * 100 : 0;
+        const pctNin = col.totalItems > 0 ? ((col.totalItems - col.conseguidos - col.deseados) / col.totalItems) * 100 : 100;
 
         document.getElementById('detailProgressPercent').textContent = Math.round(pctCons) + '%';
         document.getElementById('detailProgressFillCons').style.width = pctCons + '%';
         document.getElementById('detailProgressFillDes').style.width = pctDes + '%';
+        document.getElementById('detailProgressFillNin').style.width = pctNin + '%';
         
         currentIsOwner = data.isOwner !== undefined ? data.isOwner : true;
         

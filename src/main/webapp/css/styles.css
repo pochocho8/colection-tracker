@@ -2,7 +2,7 @@
     --color-primary: #1a56ff;
     --color-primary-dark: #1d4ed8;
     --color-primary-light: #93c5fd;
-    --color-obtained: #60a5fa;
+    --color-obtained: #1a56ff;
     --color-wished: #9ca3af;
     --color-danger: #ef4444;
     --color-danger-dark: #dc2626;
@@ -763,6 +763,12 @@ input, select {
     height: 100%;
 }
 
+.collection-card-progress-ninguno {
+    background: #94a3b8;
+    border-radius: var(--radius);
+    height: 100%;
+}
+
 .empty-state {
     text-align: center;
     padding: 3rem 1rem;
@@ -960,6 +966,13 @@ input, select {
 .progress-fill-deseados {
     height: 100%;
     background: var(--color-wished);
+    border-radius: var(--radius);
+    transition: width var(--transition-normal);
+}
+
+.progress-fill-ninguno {
+    height: 100%;
+    background: #cbd5e1;
     border-radius: var(--radius);
     transition: width var(--transition-normal);
 }
